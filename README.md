@@ -68,7 +68,7 @@ constexpr auto t = reflect::to<std::tuple>(f);
 static_assert(42 == std::get<0>(t));
 static_assert(B  == std::get<1>(t));
 
-int main() {
+int main(void) {
   reflect::for_each([](auto I) {
     std::print("{}.{}:{}={} ({}/{}/{})\n",
         reflect::type_name(f),                  // foo, foo
