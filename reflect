@@ -23,7 +23,7 @@
 //
 #if 0
 // -->
-[Overview](#Overview) / [Examples](#Examples) / [API](#API) / [FAQ](#FAQ)
+[Overview](#Overview) / [Examples](#Examples) / [API](#API) / [FAQ](#FAQ) / [Resources](#Resources)
 
 ## REFLECT: C++20 Static Reflection library
 
@@ -48,8 +48,6 @@
 ### Requirements
 
 - C++20 ([gcc-12+, clang-15+, msvc-19.36+](https://godbolt.org/z/xPc19Moef))
-
----
 
 ### Overview
 
@@ -96,20 +94,18 @@ static_assert(B  == std::get<1>(t));
 int main(void) {
   reflect::for_each([](auto I) {
     std::print("{}.{}:{}={} ({}/{}/{})\n",
-        reflect::type_name(f),                  // foo, foo
-        reflect::member_name<I>(f),             // a  , b
-        reflect::type_name(reflect::get<I>(f)), // int, E
-        reflect::get<I>(f),                     // 42 , B
-        reflect::size_of<I>(f),                 // 4  , 4
-        reflect::align_of<I>(f),                // 4  , 4
-        reflect::offset_of<I>(f));              // 0  , 4
+      reflect::type_name(f),                  // foo, foo
+      reflect::member_name<I>(f),             // a  , b
+      reflect::type_name(reflect::get<I>(f)), // int, E
+      reflect::get<I>(f),                     // 42 , B
+      reflect::size_of<I>(f),                 // 4  , 4
+      reflect::align_of<I>(f),                // 4  , 4
+      reflect::offset_of<I>(f));              // 0  , 4
   }, f);
 }
 
 // and more (see API)...
 ```
-
----
 
 ### Examples
 
@@ -117,8 +113,6 @@ int main(void) {
 - [feature] Meta-programming (https://github.com/qlibs/mp) - https://godbolt.org/z/ds3KMGhqP
 - [future] Structured Bindings can introduce a Pack (https://wg21.link/P1061) - https://godbolt.org/z/Ga3bc3KKW
 - [performance] Minimal Perfect Hashing based `enum_name` (https://github.com/qlibs/mph) - https://godbolt.org/z/WM155vTfv
-
----
 
 <a name="perf"></a>
 ### Performance
@@ -196,8 +190,6 @@ time g++-13.2 -x c++ -std=c++20 reflect -c           # 0.253s
 time clang++-17 -x c++ -std=c++20 reflect -c -DNTEST # 0.119s
 time clang++-17 -x c++ -std=c++20 reflect -c         # 0.322s
 ```
-
----
 
 ### API
 
@@ -447,53 +439,61 @@ reflect::for_each([&f](const auto I) {
                                 // For example: `-DREFLECT_ENUM_MAX=32`
 ```
 
----
-
 ### FAQ
 
-- How does `reflect` compare to https://wg21.link/P2996?
+> - How does `reflect` compare to https://wg21.link/P2996?
+>
+>   `reflect` library only provides basic reflection primitives, mostly via hacks and workarounds to deal with lack of the reflection.
+>   https://wg21.link/P2996 is a language proposal with many more features and capabilities.
+>
+> - How does `reflect` work under the hood?
+>
+>   There are many different ways to implement reflection. `reflect` uses C++20's structure bindings, concepts and source_location to do it. See `visit` implementation for more details.
+>
+> - How can `reflect` be agnostic to compiler changes?
+>
+>   `reflect` precomputes required prefixes/postfixes to find required names from the `source_location::function_name()` output for each compiler upon inclusion.
+>   Any compiler change will end up with new prefixes/postfixes and wont require additional maintenance.
+>
+> - What does it mean that `reflect` tests itself upon include?
+>
+>   `reflect` runs all tests (via static_asserts) upon include. If the include compiles it means all tests are passing and the library works correctly on given compiler, environment.
+>
+> - What is compile-time overhead of `reflect` library?
+>
+>   `reflect` include takes ~.2s (that includes running all tests).
+>   The most expensive calls are `visit` and `enum_to_name` whose timing will depend on the number of reflected elements and/or min/max values provided.
+>   There are no recursive template instantiations in the library.
+>
+> - Can I disable running tests at compile-time for faster compilation times?
+>
+>   When `-DNTEST` is defined static_asserts tests wont be executed upon inclusion.
+>   Note: Use with caution as disabling tests means that there are no guarantees upon inclusion that the given compiler/env combination works as expected.
+>
+> - How to extend the number of members to be reflected (default: 64)?
+>
+>   Override `visit`, for example - https://godbolt.org/z/Ga3bc3KKW
+>
+>   ```cpp
+>   template <class Fn, class T> // requires https://wg21.link/P1061
+>   [[nodiscard]] constexpr decltype(auto) visit(Fn&& fn, T&& t) noexcept {
+>     auto&& [... ts] = std::forward<T>(t);
+>     return std::forward<Fn>(fn)(std::forward_like<T>(ts)...);
+>   }
+>   ```
+>
+> - Similar projects?
+>   [boost.pfr](https://github.com/boostorg/pfr), [glaze](https://github.com/stephenberry/glaze), [reflect-cpp](https://github.com/getml/reflect-cpp), [magic_enum](https://github.com/Neargye/magic_enum)
 
-    > `reflect` library only provides basic reflection primitives, mostly via hacks and workarounds to deal with lack of the reflection.
-    https://wg21.link/P2996 is a language proposal with many more features and capabilities.
+### Resources
 
-- How does `reflect` work under the hood?
+> - https://wg21.link/P2996 (Reflection for C++26)
+> - https://wg21.link/P0385 (Static Reflection)
 
-    > There are many different ways to implement reflection. `reflect` uses C++20's structure bindings, concepts and source_location to do it. See `visit` implementation for more details.
+### License
 
-- How can `reflect` be agnostic to compiler changes?
+> - [MIT](LICENSE)
 
-    > `reflect` precomputes required prefixes/postfixes to find required names from the `source_location::function_name()` output for each compiler upon inclusion.
-    Any compiler change will end up with new prefixes/postfixes and wont require additional maintenance.
-
-- What does it mean that `reflect` tests itself upon include?
-
-    > `reflect` runs all tests (via static_asserts) upon include. If the include compiles it means all tests are passing and the library works correctly on given compiler, environment.
-
-- What is compile-time overhead of `reflect` library?
-
-    > `reflect` include takes ~.2s (that includes running all tests).
-    The most expensive calls are `visit` and `enum_to_name` whose timing will depend on the number of reflected elements and/or min/max values provided.
-    There are no recursive template instantiations in the library.
-
-- Can I disable running tests at compile-time for faster compilation times?
-
-    > When `-DNTEST` is defined static_asserts tests wont be executed upon inclusion.
-    Note: Use with caution as disabling tests means that there are no guarantees upon inclusion that the given compiler/env combination works as expected.
-
-- How to extend the number of members to be reflected (default: 64)?
-
-    > Override `visit`, for example - https://godbolt.org/z/Ga3bc3KKW
-
-    ```cpp
-    template <class Fn, class T> // requires https://wg21.link/P1061
-    [[nodiscard]] constexpr decltype(auto) visit(Fn&& fn, T&& t) noexcept {
-      auto&& [... ts] = std::forward<T>(t);
-      return std::forward<Fn>(fn)(std::forward_like<T>(ts)...);
-    }
-    ```
-
-- Similar projects?
-    > [boost.pfr](https://github.com/boostorg/pfr), [glaze](https://github.com/stephenberry/glaze), [reflect-cpp](https://github.com/getml/reflect-cpp), [magic_enum](https://github.com/Neargye/magic_enum)
 <!--
 #endif
 
