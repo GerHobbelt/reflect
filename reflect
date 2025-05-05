@@ -36,7 +36,7 @@
 
 ### Features
 
-- Single header (https://raw.githubusercontent.com/qlibs/reflect/main/reflect - for integration see [FAQ](#faq))
+- Single header (https://raw.githubusercontent.com/qlibs/reflect/main/reflect)
 - Minimal [API](#api)
 - Verifies itself upon include (can be disabled with `-DNTEST` - see [FAQ](#faq))
     - Basically guarantees no UB, no memory leaks*
@@ -525,7 +525,7 @@ template<> struct REFLECT_FWD_LIKE<true> { template<class T> using type = std::r
 #define REFLECT_FWD_LIKE(T, ...) static_cast<typename ::REFLECT_FWD_LIKE<::std::is_lvalue_reference_v<T>>::template type<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 struct  REFLECT_STRUCT { void* MEMBER; enum class ENUM { VALUE }; }; // has to be in the global namespace
 
-namespace reflect::inline v1_2_4 {
+namespace reflect::inline v1_2_5 {
 namespace detail {
 template<class T> extern const T ext{};
 struct any { template<class T> operator T() const noexcept; };
@@ -831,7 +831,7 @@ template<class E, fixed_string unknown = "", auto Min = enum_min(E{}), auto Max 
  * @endcode
  */
 template<class...>
-static constexpr auto type_id_v = +[]{};
+inline constexpr auto type_id_v = []{};
 
 template<class T>
 [[nodiscard]] constexpr auto type_id() -> std::size_t {
@@ -1077,7 +1077,7 @@ enum e3 { e3a, e3b, e3c, };
 enum class e4 : std::int32_t { e4a, e4b = 5, e4c, e4d = 2, };
 consteval auto enum_min(e) { return e::_141; }
 consteval auto enum_max(e) { return e::_142; }
-void failed(); 
+void failed();
 inline constexpr auto expect = [](bool cond) { if (not cond) { failed(); } };
 } // reflect::test
 
@@ -1174,9 +1174,9 @@ static_assert(([] {
 
     struct non_standard_layout {
      private:
-        int _1{};
+        [[maybe_unused]] int _1{};
      public:
-        int _2{};
+        [[maybe_unused]] int _2{};
     };
 
     struct S {
